@@ -164,4 +164,5 @@ void loop()
     head_y = head_y - 8;
   }
   drawSnake(head_x, head_y);
+  
 }
