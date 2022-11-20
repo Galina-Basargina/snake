@@ -44,10 +44,13 @@ enum Direction
 bool game_started;
 
 // ЗМЕЙКА 
-Direction snake_direction = DIR_UP;  // по умолчанию Змейка ползет наверх
+Direction snake_direction;
 // координаты головы Змейки
-int16_t head_x = 64;
-int16_t head_y = 64;
+int16_t head_x;
+int16_t head_y;
+//координаты хвостика Змейки
+int16_t tail_x;
+int16_t tail_y;
 
 void drawSnake(int16_t x, int16_t y)
 {
@@ -63,6 +66,20 @@ void clearSnake(int16_t x, int16_t y)
   tft.fillRect(x, y, 7, 7, BLACK);
 }
 
+void gameRestart(int16_t x, int16_t y, Direction d)
+{
+ // закрасила поле черным цветом
+  tft.fillRect(0, 0, 128, 128, BLACK);
+
+  // временная Змейка (голова)
+  head_x = x;
+  head_y = y;
+  snake_direction = d;
+  drawSnake(head_x, head_y);
+
+
+}
+
 void setup()
 {
   Serial.begin(9600);
@@ -73,14 +90,12 @@ void setup()
   pinMode(VRY_PIN, INPUT);
   pinMode(SW_PIN, INPUT);
 
-  // закрасила поле черным цветом
-  tft.fillRect(0, 0, 128, 128, BLACK);
-
-  // временная Змейка
-  drawSnake(head_x, head_y);
-
   // в самом начале игры игра не началась
   game_started = 0;
+  
+  // подготовка игры
+  // координаты центр поля, направление вверх
+  gameRestart(64, 64, DIR_UP);
 }
 
 void loop() 
@@ -95,6 +110,7 @@ void loop()
     if (key_pressed == 0)
     {
       game_started = 1;
+      gameRestart(64, 64, DIR_UP);
     }
     else 
     {
@@ -102,11 +118,10 @@ void loop()
     }
   }
 
-  /*Serial.print("snake_direction = "); Serial.print(snake_direction, DEC);
-  Serial.print(", x = "); Serial.print(x, DEC);
-  Serial.print(", y = "); Serial.print(y, DEC);
-  Serial.print(", new_x = "); Serial.print(new_x, DEC);
-  Serial.print(", new_y = "); Serial.println(new_y, DEC);/**/
+  /**/Serial.print("head = "); Serial.print(head_x, DEC);
+  Serial.print(","); Serial.print(head_y, DEC);
+  Serial.print(", tail = "); Serial.print(tail_x, DEC);
+  Serial.print(","); Serial.print(tail_y, DEC);/**/
 
   // пауза в игре
   for (int i = 0; i < 750; i = i + 10)
@@ -117,8 +132,8 @@ void loop()
     x = analogRead(VRX_PIN); // от 0 до 1023
     y = analogRead(VRY_PIN); // от 0 до 1023
     int new_x, new_y;
-    new_x = x - 512; // от -512 до 511, где 0 х=517
-    new_y = y - 512; // от -512 до 511, где 0 у=522
+    new_x = 512 - x; // от -512 до 511, где 0 х=517
+    new_y = 512 - y; // от -512 до 511, где 0 у=522
 
     if ((abs(new_x) > 300) && (abs(new_y) > 300))
     {
@@ -145,24 +160,40 @@ void loop()
     }
   }
 
-  // перемещение Змейки
-  clearSnake(head_x, head_y);
+  /**/Serial.print(", snake_direction = "); Serial.print(snake_direction, DEC);
+  Serial.print(", new_x = "); Serial.print(head_x, DEC);
+  Serial.print(", new_y = "); Serial.println(head_y, DEC);/**/
+
+  //рассчитать новые координаты
+  int16_t newhead_x = head_x, newhead_y = head_y;
   if (snake_direction == DIR_RIGHT)
   {
-    head_x = head_x + 8;
+    newhead_x = newhead_x + 8;
   }
   else if (snake_direction == DIR_LEFT)
   {
-    head_x = head_x - 8;
+    newhead_x = newhead_x - 8;
   }
   else if (snake_direction == DIR_DOWN)
   {
-    head_y = head_y + 8;
+    newhead_y = newhead_y + 8;
   }
   else if (snake_direction == DIR_UP)
   {
-    head_y = head_y - 8;
+    newhead_y = newhead_y - 8;
   }
-  drawSnake(head_x, head_y);
-  
+
+  // условие с пересечением линий
+  if (newhead_x == -8 || newhead_x == 128 || newhead_y == -8 || newhead_y == 128)
+  {
+    game_started = 0;
+    return;
+  }
+  // стрираю по старым координатам
+  clearSnake(head_x, head_y);
+  // рисую по новым координатам
+  drawSnake(newhead_x, newhead_y);
+  // применяю новые координаты
+  head_x = newhead_x;
+  head_y = newhead_y;
 }
