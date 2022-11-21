@@ -119,13 +119,7 @@ void loop()
     if (key_pressed == 0)
     {
       game_started = 1;
-      gameRestart(64, 64, DIR_UP);//random(DIR_LOW, DIR_HIGH+1));
-      tail_length = 5;
-      tail_x[0] = head_x; tail_y[0] = head_y;
-      tail_x[1] = head_x; tail_y[1] = head_y+8;
-      tail_x[2] = head_x+8; tail_y[2] = head_y+8;
-      tail_x[3] = head_x+16; tail_y[3] = head_y+8;
-      tail_x[4] = head_x+16; tail_y[4] = head_y+16;
+      gameRestart(64, 64, random(DIR_LOW, DIR_HIGH+1));
     }
     else 
     {
@@ -139,6 +133,7 @@ void loop()
   Serial.print(","); Serial.print(tail_y, DEC);/**/
 
   // пауза в игре
+  Direction previous_direction = snake_direction;
   for (int i = 0; i < 750; i = i + 10)
   {
     delay(10);
@@ -156,22 +151,25 @@ void loop()
     }
     else
     {
-        if (new_x < -300)
-        {
-          snake_direction = DIR_RIGHT;
-        }
-        else if (new_x > 300)
-        {
-          snake_direction = DIR_LEFT;
-        }
-        else if (new_y < -300)
-        {
-          snake_direction = DIR_DOWN;
-        }
-        else if (new_y > 300)
+      if (new_x < -300)
+      {
+        snake_direction = DIR_RIGHT;
+      }
+      else if (new_x > 300)
+      {
+        snake_direction = DIR_LEFT;
+      }
+      else if (new_y < -300)
+      {
+        snake_direction = DIR_DOWN;
+      }
+      else if (new_y > 300)
+      {
+        if (tail_length >= 0 && previous_direction != DIR_DOWN)
         {
           snake_direction = DIR_UP;
         }
+      }
     }
   }
 
@@ -198,6 +196,21 @@ void loop()
     game_started = 0;
     return;
   }
+  // кусачка
+  for (int i = 0; i < tail_length ; ++i)
+  {
+    if (tail_x[i] == newhead_x && tail_y[i] == newhead_y)
+    {
+      game_started = 0;
+      return;
+    }
+  }
+
+  //----------------
+  // для отладки
+  int16_t tmp_x = tail_length ? tail_x[tail_length-1] : head_x;
+  int16_t tmp_y = tail_length ? tail_y[tail_length-1] : head_y;
+  //----------------
 
   // стрираю по старым координатам (голова)
   clearSnake(head_x, head_y);
@@ -208,6 +221,7 @@ void loop()
   }
   // рисую по новым координатам (голова)
   drawSnake(newhead_x, newhead_y);
+
   // применяю новые координаты (хвостик)
   for (int i = tail_length - 1; i > 0 ; --i)
   {
@@ -216,11 +230,23 @@ void loop()
   }
   tail_x[0] = head_x;
   tail_y[0] = head_y;
+  //----------------
+  // для отладки
+  static int kuk = 0;
+  kuk = (kuk + 1) % 10;
+  if (kuk == 0)
+  {
+    tail_x[tail_length] = tmp_x;
+    tail_y[tail_length] = tmp_y;
+    tail_length++;
+  }
+  //----------------
   // рисую по новым координатам (хвостик)
   for (int i = 0; i < tail_length; ++i)
   {
     drawSnake(tail_x[i], tail_y[i]);
   }
+
   // применяю новые координаты (голова)
   head_x = newhead_x;
   head_y = newhead_y;
