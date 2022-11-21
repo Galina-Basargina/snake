@@ -7,6 +7,8 @@
 #define VRX_PIN A0
 #define VRY_PIN A1
 #define SW_PIN 12
+// не подключенная ножка
+#define RANDOM_PIN A2
 // управление дисплея
 #define __CS 10
 #define __RST 9
@@ -37,7 +39,9 @@ enum Direction
   DIR_UP, 
   DIR_RIGHT,
   DIR_DOWN,
-  DIR_LEFT
+  DIR_LEFT,
+  DIR_LOW = DIR_UP,
+  DIR_HIGH = DIR_LEFT
 };
 
 // начало игры
@@ -48,9 +52,11 @@ Direction snake_direction;
 // координаты головы Змейки
 int16_t head_x;
 int16_t head_y;
-//координаты хвостика Змейки
-int16_t tail_x;
-int16_t tail_y;
+//координаты хвостика Змейки (хвост не больше чем размер экрана)
+#define TAIL_MAX_LENGTH (16*16-1)
+int16_t tail_x[TAIL_MAX_LENGTH];
+int16_t tail_y[TAIL_MAX_LENGTH];
+uint8_t tail_length;
 
 void drawSnake(int16_t x, int16_t y)
 {
@@ -68,16 +74,19 @@ void clearSnake(int16_t x, int16_t y)
 
 void gameRestart(int16_t x, int16_t y, Direction d)
 {
- // закрасила поле черным цветом
+  // сброс генератора случайных чисел
+  randomSeed(analogRead(RANDOM_PIN));
+
+  // закрасила поле черным цветом
   tft.fillRect(0, 0, 128, 128, BLACK);
 
-  // временная Змейка (голова)
+  // Змейка (голова)
   head_x = x;
   head_y = y;
   snake_direction = d;
   drawSnake(head_x, head_y);
-
-
+  // хвостик нулевой длинны
+  tail_length = 0;
 }
 
 void setup()
@@ -110,7 +119,13 @@ void loop()
     if (key_pressed == 0)
     {
       game_started = 1;
-      gameRestart(64, 64, DIR_UP);
+      gameRestart(64, 64, DIR_UP);//random(DIR_LOW, DIR_HIGH+1));
+      tail_length = 5;
+      tail_x[0] = head_x; tail_y[0] = head_y;
+      tail_x[1] = head_x; tail_y[1] = head_y+8;
+      tail_x[2] = head_x+8; tail_y[2] = head_y+8;
+      tail_x[3] = head_x+16; tail_y[3] = head_y+8;
+      tail_x[4] = head_x+16; tail_y[4] = head_y+16;
     }
     else 
     {
@@ -118,7 +133,7 @@ void loop()
     }
   }
 
-  /**/Serial.print("head = "); Serial.print(head_x, DEC);
+  /**Serial.print("head = "); Serial.print(head_x, DEC);
   Serial.print(","); Serial.print(head_y, DEC);
   Serial.print(", tail = "); Serial.print(tail_x, DEC);
   Serial.print(","); Serial.print(tail_y, DEC);/**/
@@ -160,28 +175,22 @@ void loop()
     }
   }
 
-  /**/Serial.print(", snake_direction = "); Serial.print(snake_direction, DEC);
-  Serial.print(", new_x = "); Serial.print(head_x, DEC);
-  Serial.print(", new_y = "); Serial.println(head_y, DEC);/**/
-
-  //рассчитать новые координаты
+  //рассчитать новые координаты (голова)
   int16_t newhead_x = head_x, newhead_y = head_y;
   if (snake_direction == DIR_RIGHT)
-  {
-    newhead_x = newhead_x + 8;
-  }
+    newhead_x += 8;
   else if (snake_direction == DIR_LEFT)
-  {
-    newhead_x = newhead_x - 8;
-  }
+    newhead_x -= 8;
   else if (snake_direction == DIR_DOWN)
-  {
-    newhead_y = newhead_y + 8;
-  }
+    newhead_y += 8;
   else if (snake_direction == DIR_UP)
-  {
-    newhead_y = newhead_y - 8;
-  }
+    newhead_y -= 8;
+  
+  /**Serial.print(", snake_direction = "); Serial.print(snake_direction, DEC);
+  Serial.print(", head = "); Serial.print(newhead_x, DEC);
+  Serial.print(","); Serial.print(newhead_y, DEC);
+  Serial.print(", tail = "); Serial.print(newtail_x, DEC);
+  Serial.print(","); Serial.println(newtail_y, DEC);/**/
 
   // условие с пересечением линий
   if (newhead_x == -8 || newhead_x == 128 || newhead_y == -8 || newhead_y == 128)
@@ -189,11 +198,30 @@ void loop()
     game_started = 0;
     return;
   }
-  // стрираю по старым координатам
+
+  // стрираю по старым координатам (голова)
   clearSnake(head_x, head_y);
-  // рисую по новым координатам
+  // стираю по старым координатам (хвостик)
+  for (int i = 0; i < tail_length; ++i)
+  {
+    clearSnake(tail_x[i], tail_y[i]);    
+  }
+  // рисую по новым координатам (голова)
   drawSnake(newhead_x, newhead_y);
-  // применяю новые координаты
+  // применяю новые координаты (хвостик)
+  for (int i = tail_length - 1; i > 0 ; --i)
+  {
+    tail_x[i] = tail_x[i - 1];
+    tail_y[i] = tail_y[i - 1];
+  }
+  tail_x[0] = head_x;
+  tail_y[0] = head_y;
+  // рисую по новым координатам (хвостик)
+  for (int i = 0; i < tail_length; ++i)
+  {
+    drawSnake(tail_x[i], tail_y[i]);
+  }
+  // применяю новые координаты (голова)
   head_x = newhead_x;
   head_y = newhead_y;
 }
