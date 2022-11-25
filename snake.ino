@@ -72,6 +72,16 @@ void clearSnake(int16_t x, int16_t y)
   tft.fillRect(x, y, 7, 7, BLACK);
 }
 
+void drawFruit(int16_t x, int16_t y)
+{
+  int16_t vert = x + 3;
+  int16_t horiz = y + 3;
+  tft.fillRect(x + 2, y, 3, 7, ORANGE);
+  tft.fillRect(x, y + 2, 7, 3, ORANGE);
+  tft.drawLine(vert, y + 1, vert, y + 5, BLACK);
+  tft.drawLine(x + 1, horiz, x + 5, horiz, BLACK);
+}
+
 void gameRestart(int16_t x, int16_t y, Direction d)
 {
   // сброс генератора случайных чисел
@@ -120,6 +130,7 @@ void loop()
     {
       game_started = 1;
       gameRestart(64, 64, random(DIR_LOW, DIR_HIGH+1));
+      drawFruit(32, 8);
     }
     else 
     {
@@ -153,22 +164,31 @@ void loop()
     {
       if (new_x < -300)
       {
-        snake_direction = DIR_RIGHT;
+        if ((previous_direction == DIR_LEFT) && (tail_length > 0))
+          continue;
+        else
+          snake_direction = DIR_RIGHT;
       }
       else if (new_x > 300)
       {
-        snake_direction = DIR_LEFT;
+        if ((previous_direction == DIR_RIGHT) && (tail_length > 0))
+          continue;
+        else
+          snake_direction = DIR_LEFT;
       }
       else if (new_y < -300)
       {
-        snake_direction = DIR_DOWN;
+        if ((previous_direction == DIR_UP) && (tail_length > 0))
+          continue;
+        else
+          snake_direction = DIR_DOWN;
       }
       else if (new_y > 300)
       {
-        if (tail_length >= 0 && previous_direction != DIR_DOWN)
-        {
+        if ((previous_direction == DIR_DOWN) && (tail_length > 0))
+          continue;
+        else
           snake_direction = DIR_UP;
-        }
       }
     }
   }
