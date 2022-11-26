@@ -58,6 +58,11 @@ int16_t tail_x[TAIL_MAX_LENGTH];
 int16_t tail_y[TAIL_MAX_LENGTH];
 uint8_t tail_length;
 
+// координаты еды
+int16_t fruit_x;
+int16_t fruit_y;
+int16_t delay_fruit;
+
 void drawSnake(int16_t x, int16_t y)
 {
   int16_t vert = x + 3;
@@ -97,6 +102,9 @@ void gameRestart(int16_t x, int16_t y, Direction d)
   drawSnake(head_x, head_y);
   // хвостик нулевой длинны
   tail_length = 0;
+  // замусоривание координаты и задержка появления еды
+  fruit_x = 128;
+  delay_fruit = 5;
 }
 
 void setup()
@@ -130,7 +138,6 @@ void loop()
     {
       game_started = 1;
       gameRestart(64, 64, random(DIR_LOW, DIR_HIGH+1));
-      drawFruit(32, 8);
     }
     else 
     {
@@ -145,7 +152,7 @@ void loop()
 
   // пауза в игре
   Direction previous_direction = snake_direction;
-  for (int i = 0; i < 750; i = i + 10)
+  for (int i = 0; i < 500 - tail_length; i = i + 10)
   {
     delay(10);
 
@@ -226,12 +233,6 @@ void loop()
     }
   }
 
-  //----------------
-  // для отладки
-  int16_t tmp_x = tail_length ? tail_x[tail_length-1] : head_x;
-  int16_t tmp_y = tail_length ? tail_y[tail_length-1] : head_y;
-  //----------------
-
   // стрираю по старым координатам (голова)
   clearSnake(head_x, head_y);
   // стираю по старым координатам (хвостик)
@@ -239,9 +240,19 @@ void loop()
   {
     clearSnake(tail_x[i], tail_y[i]);    
   }
+
+
   // рисую по новым координатам (голова)
   drawSnake(newhead_x, newhead_y);
 
+  // запоминаю положение кончика хвоста
+  int16_t tiptail_x;
+  int16_t tiptail_y;
+  if (tail_length > 0)
+  {
+    tiptail_x = tail_x[tail_length - 1];
+    tiptail_y = tail_y[tail_length - 1];
+  }
   // применяю новые координаты (хвостик)
   for (int i = tail_length - 1; i > 0 ; --i)
   {
@@ -249,18 +260,51 @@ void loop()
     tail_y[i] = tail_y[i - 1];
   }
   tail_x[0] = head_x;
-  tail_y[0] = head_y;
-  //----------------
-  // для отладки
-  static int kuk = 0;
-  kuk = (kuk + 1) % 10;
-  if (kuk == 0)
+  tail_y[0] = head_y; 
+  
+  
+  // еда
+  if (fruit_x == newhead_x && fruit_y == newhead_y)
   {
-    tail_x[tail_length] = tmp_x;
-    tail_y[tail_length] = tmp_y;
-    tail_length++;
+    if (tail_length == 255)
+      game_started = 0;
+    else if (tail_length == 0)
+    {
+      tail_x[0] = head_x;
+      tail_y[0] = head_y;
+      tail_length = 1;
+    }
+    else
+    {
+      tail_x[tail_length] = tiptail_x;
+      tail_y[tail_length] = tiptail_y;
+      ++tail_length;
+    }
+    delay_fruit = random(4, 7);
+    fruit_x = 128;
   }
-  //----------------
+  else if (delay_fruit > 0)
+    --delay_fruit;
+  else
+  {
+    clearSnake(fruit_x, fruit_y);
+    delay_fruit = 10 + random(0, 6);
+    fruit_x = random(0, 16) * 8;
+    fruit_y = random(0, 16) * 8;
+    for (int i = 0; i < tail_length; ++i)
+    {
+      if (tail_x[i] == fruit_x && tail_y[i] == fruit_y)
+        delay_fruit = 0;
+    }
+    if (newhead_x == fruit_x && newhead_y == fruit_y && delay_fruit != 0)
+      delay_fruit = 0;
+    if (delay_fruit != 0)
+      drawFruit(fruit_x, fruit_y);
+    else 
+      fruit_x = 128;
+  }
+
+
   // рисую по новым координатам (хвостик)
   for (int i = 0; i < tail_length; ++i)
   {
