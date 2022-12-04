@@ -53,8 +53,9 @@ Direction snake_direction;
 // координаты головы Змейки
 int16_t head_x;
 int16_t head_y;
-//координаты хвостика Змейки (хвост не больше чем размер экрана)
-#define TAIL_MAX_LENGTH (16*16-1)
+//координаты хвостика Змейки (хвост не больше чем размер экрана
+// с учетом головы и последнего фрукта)
+#define TAIL_MAX_LENGTH 1 //(16*16-2)
 int16_t tail_x[TAIL_MAX_LENGTH];
 int16_t tail_y[TAIL_MAX_LENGTH];
 uint8_t tail_length;
@@ -87,6 +88,16 @@ void drawFruit(int16_t x, int16_t y)
   tft.fillRect(x, y + 2, 7, 3, fruit);
   tft.drawLine(vert, y + 1, vert, y + 5, BLACK);
   tft.drawLine(x + 1, horiz, x + 5, horiz, BLACK);
+}
+
+void win()
+{
+  tft.fillRect(18, 34, 128-(18*2), 128-(34*2), BLACK);
+  tft.drawRect(16, 32, 128-(16*2), 128-(32*2), ORANGE);
+  tft.drawRect(17, 33, 128-(17*2), 128-(33*2), ORANGE);
+  tft.drawChar(22+18, 34+20, 'W', ORANGE, BLACK, 3);
+  tft.drawChar(22+18+18, 34+20, 'I', ORANGE, BLACK, 3);
+  tft.drawChar(22+18+18+18, 34+20, 'N', ORANGE, BLACK, 3);
 }
 
 void gameRestart(int16_t x, int16_t y, Direction d)
@@ -235,17 +246,16 @@ void loop()
     }
   }
 
+  /* создает мерцание (ниже стирается только кончик хвостика,
+   * что-бы не было мерцания)
   // стрираю по старым координатам (голова)
   clearSnake(head_x, head_y);
   // стираю по старым координатам (хвостик)
   for (int i = 0; i < tail_length; ++i)
   {
     clearSnake(tail_x[i], tail_y[i]);    
-  }
-
-
-  // рисую по новым координатам (голова)
-  drawSnake(newhead_x, newhead_y);
+  }*/
+  
 
   // запоминаю положение кончика хвоста
   int16_t tiptail_x;
@@ -265,10 +275,19 @@ void loop()
   tail_y[0] = head_y; 
   
   
+  // рисую по новым координатам (голова)
+  drawSnake(newhead_x, newhead_y);
+
+  // стираем только кончик хвоста
+  if (tail_length > 0)
+    clearSnake(tiptail_x, tiptail_y);
+  else
+    clearSnake(head_x, head_y);
+
   // еда
   if (fruit_x == newhead_x && fruit_y == newhead_y)
   {
-    if (tail_length == 255)
+    if (tail_length == (TAIL_MAX_LENGTH - 1))
       game_started = 0;
     else if (tail_length == 0)
     {
@@ -316,4 +335,9 @@ void loop()
   // применяю новые координаты (голова)
   head_x = newhead_x;
   head_y = newhead_y;
+
+  if (game_started == 0)
+  {
+    win();
+  }
 }
