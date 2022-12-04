@@ -31,6 +31,7 @@
 #define CYAN       RGB(0, 63, 31)
 #define MAGENTA    RGB(31, 0, 31)
 #define ORANGE     0xFA80 // яркий оранжевый
+#define FRUIT      RGB(random(7, 32), random(15, 64), random(7, 32))
 
 TFT_ILI9163C tft = TFT_ILI9163C(__CS, __DC, __RST);
 
@@ -79,10 +80,11 @@ void clearSnake(int16_t x, int16_t y)
 
 void drawFruit(int16_t x, int16_t y)
 {
+  uint16_t fruit = FRUIT;
   int16_t vert = x + 3;
   int16_t horiz = y + 3;
-  tft.fillRect(x + 2, y, 3, 7, ORANGE);
-  tft.fillRect(x, y + 2, 7, 3, ORANGE);
+  tft.fillRect(x + 2, y, 3, 7, fruit);
+  tft.fillRect(x, y + 2, 7, 3, fruit);
   tft.drawLine(vert, y + 1, vert, y + 5, BLACK);
   tft.drawLine(x + 1, horiz, x + 5, horiz, BLACK);
 }
