@@ -55,7 +55,7 @@ int16_t head_x;
 int16_t head_y;
 //координаты хвостика Змейки (хвост не больше чем размер экрана
 // с учетом головы и последнего фрукта)
-#define TAIL_MAX_LENGTH 1 //(16*16-2)
+#define TAIL_MAX_LENGTH 16*16-2
 int16_t tail_x[TAIL_MAX_LENGTH];
 int16_t tail_y[TAIL_MAX_LENGTH];
 uint8_t tail_length;
@@ -98,6 +98,25 @@ void win()
   tft.drawChar(22+18, 34+20, 'W', ORANGE, BLACK, 3);
   tft.drawChar(22+18+18, 34+20, 'I', ORANGE, BLACK, 3);
   tft.drawChar(22+18+18+18, 34+20, 'N', ORANGE, BLACK, 3);
+}
+
+void gameOver()
+{
+  tft.fillRect(12, 34, 128-(12*2), 128-(34*2), BLACK);
+  tft.drawRect(10, 32, 128-(10*2), 128-(32*2), ORANGE);
+  tft.drawRect(11, 33, 128-(11*2), 128-(33*2), ORANGE);
+
+  char go[9] = {'G','a','m','e',' ','o','v','e','r'};
+  char sc[9] = {'S','c','o','r','e',' ','0','0','0'};
+  sc[6] += tail_length / 100;
+  sc[7] += (tail_length % 100) / 10;
+  sc[8] += tail_length % 10;
+
+  for (int i = 0; i < 9; i++)
+  {
+    tft.drawChar(12 + 3 + 11 * i, 34 + 12, go[i], ORANGE, BLACK, 2);
+    tft.drawChar(12 + 16 + 8 * i, 34 + 36, sc[i], ORANGE, BLACK, 1);
+  }
 }
 
 void gameRestart(int16_t x, int16_t y, Direction d)
@@ -234,6 +253,7 @@ void loop()
   if (newhead_x == -8 || newhead_x == 128 || newhead_y == -8 || newhead_y == 128)
   {
     game_started = 0;
+    gameOver();
     return;
   }
   // кусачка
@@ -242,6 +262,7 @@ void loop()
     if (tail_x[i] == newhead_x && tail_y[i] == newhead_y)
     {
       game_started = 0;
+      gameOver();
       return;
     }
   }
@@ -309,7 +330,7 @@ void loop()
   else
   {
     clearSnake(fruit_x, fruit_y);
-    delay_fruit = 10 + random(0, 6);
+    delay_fruit = random(20, 28);
     fruit_x = random(0, 16) * 8;
     fruit_y = random(0, 16) * 8;
     for (int i = 0; i < tail_length; ++i)
