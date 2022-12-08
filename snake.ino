@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <TFT_ILI9163C.h>
+#include "pitches.h"
 
 // ножки микроконтроллера
 #define VRX_PIN A0
@@ -13,6 +14,8 @@
 #define __CS 10
 #define __RST 9
 #define __DC 8
+// пищало
+#define SPEAKER_PIN 3
 
 // определение цветов
 // .... .... .... ....
@@ -90,6 +93,36 @@ void drawFruit(int16_t x, int16_t y)
   tft.drawLine(x + 1, horiz, x + 5, horiz, BLACK);
 }
 
+int notes[] = {
+  NOTE_C4, NOTE_A4, NOTE_A4, NOTE_G4,
+  NOTE_A4, NOTE_F4, NOTE_C4, NOTE_C4,
+  NOTE_C4, NOTE_A4, NOTE_A4, NOTE_AS4,
+  NOTE_G4, NOTE_C5, 0, NOTE_C5, NOTE_D4,
+  NOTE_D4, NOTE_AS4,NOTE_AS4,NOTE_A4,
+  NOTE_G4, NOTE_F4, NOTE_C4, NOTE_A4,
+  NOTE_A4, NOTE_G4, NOTE_A4, NOTE_F4
+};
+
+int times[] = {
+  400,400,400,400,
+  400,400,400,400,
+  400,400,400,400,
+  400,600,700,400,400,
+  400,400,400,400,
+  400,400,400,400,
+  400,400,400,600
+};
+
+void music()
+{
+  for (int i = 0; i < 29; i++)
+  {
+    tone(SPEAKER_PIN, notes[i], times[i]);
+    delay(times[i]);
+    noTone(SPEAKER_PIN);
+  }
+}
+
 void win()
 {
   tft.fillRect(18, 34, 128-(18*2), 128-(34*2), BLACK);
@@ -98,6 +131,8 @@ void win()
   tft.drawChar(22+18, 34+20, 'W', ORANGE, BLACK, 3);
   tft.drawChar(22+18+18, 34+20, 'I', ORANGE, BLACK, 3);
   tft.drawChar(22+18+18+18, 34+20, 'N', ORANGE, BLACK, 3);
+
+  music();
 }
 
 void gameOver()
@@ -117,6 +152,8 @@ void gameOver()
     tft.drawChar(12 + 3 + 11 * i, 34 + 12, go[i], ORANGE, BLACK, 2);
     tft.drawChar(12 + 16 + 8 * i, 34 + 36, sc[i], ORANGE, BLACK, 1);
   }
+  
+  music();
 }
 
 void gameRestart(int16_t x, int16_t y, Direction d)
